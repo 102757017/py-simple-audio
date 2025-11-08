@@ -1,0 +1,40 @@
+name: Build simpleaudio for Windows (Python 3.11)
+on:
+  workflow_dispatch: # 允许手动触发此工作流
+  push:
+    branches:
+      - main # 或你的主分支名，例如 master
+      - develop # 如果你有开发分支也可以加上
+jobs:
+  build_wheel:
+    runs-on: windows-latest # 在最新的 Windows 环境下运行
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4 # 检出你的代码库
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        architecture: 'x64' # 指定 64 位架构
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        # `build` 库会处理 `setuptools` 和 `wheel` 的安装
+        # `simpleaudio` 的 C 扩展需要 C++ 编译器，windows-latest 环境通常已经预装了 Visual Studio Build Tools
+        python -m pip install build
+    - name: Build simpleaudio wheel
+      run: |
+        # 使用 `build` 模块来构建 wheel 文件
+        # --wheel 表示只构建 wheel 包
+        # --sdist 表示只构建源码分发包 (这里不需要)
+        # --no-isolation 表示不创建隔离的构建环境 (有时有用，但通常建议默认行为)
+        python -m build --wheel .
+    - name: Upload wheel artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: simpleaudio-wheels-windows-py311
+        path: dist/*.whl # 默认情况下，build 命令会在 dist/ 目录下生成 wheel 文件
+    - name: Display build artifacts path (for debugging)
+      run: |
+        echo "Build artifacts are located in: ${{ github.workspace }}/dist"
+        dir dist
